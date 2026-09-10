@@ -55,8 +55,6 @@
 //   console.log(`Server running on port ${PORT}`);
 // });
 
-
-
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -83,7 +81,7 @@ connectDB();
 const app = express();
 
 // =========================
-// CORS Configuration
+// CORS
 // =========================
 
 const allowedOrigins = [
@@ -92,38 +90,40 @@ const allowedOrigins = [
   "https://nova-project-git-main-vishal-mauryas-projects-dc22849f.vercel.app",
 ];
 
+// Manual CORS middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Access-Control-Allow-Credentials", "true");
+  }
+
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  );
+
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+
+  // Handle browser preflight request
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
+// Also keep cors middleware
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests without origin
-      // (Postman, server-to-server, etc.)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      console.log("Blocked by CORS:", origin);
-      return callback(new Error("Not allowed by CORS"));
-    },
-
+    origin: allowedOrigins,
     credentials: true,
-
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "OPTIONS",
-    ],
-
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -157,12 +157,17 @@ app.use("/api", taskRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
 
-
+// =========================
+// Error Handling
+// =========================
 
 app.use(notFound);
 
 app.use(errorHandler);
 
+// =========================
+// Server
+// =========================
 
 const PORT = process.env.PORT || 5000;
 
